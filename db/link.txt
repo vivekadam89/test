@@ -1,0 +1,17 @@
+Select A.Report_Id,A.Display_Report_Name,B.Ds_Id,D.Ds_User_Id, B.Query_Id, B.Query_Text,B.Dynamic_Query_Template_Id, Case When Upper(B.Query_Text) Like '%TABLE%' Then 'TABLE FUNCTION / GTT'Else Null End As "OBJECT_DEPENDENCY", Case When Upper(B.Query_Text) Like '%TABLE%' Then SUBSTR(b.query_text,INSTR(b.query_text,'TF_'),(INSTR(SUBSTR(b.query_text,INSTR(b.query_text,'TF_')),'(')-1)) else null end"TableFunction_Name"
+from ra_reports_b a, ra_seeded_queries b, ra_report_query_map c, (select  distinct ds_id,Ds_User_Id from RA_DATA_SOURCES) d
+where a.report_id=c.report_id
+And B.Query_Id=C.Query_Id
+and b.ds_id = d.ds_id
+And A.Active_Ind='A'
+and a.app_id=1
+--and a.report_id in ();
+--and display_report_name like '%%';
+--and lower(b.query_text) like '%%';
+and report_short_name like '%%'
+order by b.query_id,object_dependency;
+
+select * from (select name,case when REFERENCED_TYPE='TABLE' and REFERENCED_NAME like 'GTT%' then REFERENCED_NAME when REFERENCED_TYPE <>'TABLE' then REFERENCED_NAME end REFERENCED_NAME,REFERENCED_TYPE 
+from all_dependencies@SGLCRM_DEV_DMG where referenced_owner='SGLCRM' 
+AND REFERENCED_TYPE <> 'SYNONYM'
+and name in ('TF_FBBGPO0002')) vk where vk.REFERENCED_NAME is not null;
