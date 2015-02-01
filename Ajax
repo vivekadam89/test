@@ -1,0 +1,84 @@
+<?php require "dbconnection.php"; ?>
+<html>
+<head>
+<script>
+function GetXmlHttpObject()
+		{
+		var xmlHttp=null;
+		try
+		 {
+		 // Firefox, Opera 8.0+, Safari
+		 xmlHttp=new XMLHttpRequest();
+		 }
+		catch (e)
+		 {
+		 //Internet Explorer
+		 try
+		  {
+		  xmlHttp=new ActiveXObject("Msxml2.XMLHTTP");
+		  }
+		 catch (e)
+		  {
+		  xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+		  }
+		 }
+		return xmlHttp;
+		}
+		
+		function showContact(stateid)
+		{ 
+		xmlHttp = GetXmlHttpObject();
+		
+		var url="getContact.php?state_id="+stateid;
+		
+		xmlHttp.onreadystatechange=function()
+			{
+			if(xmlHttp.readyState==4)
+			  {
+			  document.getElementById("dispContact").innerHTML = xmlHttp.responseText;
+			  //alert(xmlHttp.responseText);
+			  }
+			}
+		xmlHttp.open("GET",url)
+		xmlHttp.send()
+		}
+</script>
+</head>
+<body>
+	<?php
+		$qry = "select * from state";
+		$ok = mysql_query($qry);
+		if($ok && mysql_num_rows($ok)>0){
+			echo "<select name='selstate' onChange='showContact(this.value)' class='name1'>";
+			echo "<option>---Select state---</option>";
+			while($rec = mysql_fetch_array($ok))
+			{
+				echo "<option value='{$rec[0]}'>{$rec[1]}</option>";
+			}//while
+			echo "</select>";
+		}
+		else
+			"No records found.";
+	?>
+    <select name="cityname" class="name1"><option value='0' >--Select--</option></select>
+</body>
+</html>
+
+getContact.php
+
+<?php require "dbconnection.php"; ?>
+<?php
+$id=intval($_GET["stateid"]);
+$sql = "Select * from city where state_id ='$id'";
+$ok=mysql_query($sql);
+	if($ok && mysql_num_rows($ok)>0){
+		echo "<select name='cityname' class='name1'><option value='0'>---Select--</option>";
+		while($row = mysql_fetch_array($ok))
+		{    
+			echo "<option value='{$row[0]}'>{$row[1]}</option>";
+		}
+		echo "</select>";
+	}
+	else
+		echo "<select name='cityname' class='name1'><option value='0'>---Select--</option></select>";
+?>
