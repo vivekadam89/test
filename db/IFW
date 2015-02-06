@@ -1,0 +1,115 @@
+Select A.Report_Id,A.Display_Report_Name,B.Ds_Id,D.Ds_User_Id, B.Query_Id, B.Query_Text,B.Dynamic_Query_Template_Id, Case When Upper(B.Query_Text) Like '%TABLE%' Then 'TABLE FUNCTION / GTT'Else Null End As "OBJECT_DEPENDENCY", Case When Upper(B.Query_Text) Like '%TABLE%' Then SUBSTR(b.query_text,INSTR(b.query_text,'TF_'),(INSTR(SUBSTR(b.query_text,INSTR(b.query_text,'TF_')),'(')-1)) else null end"TableFunction_Name"
+from ra_reports_b a, ra_seeded_queries b, ra_report_query_map c, (select  distinct ds_id,Ds_User_Id from RA_DATA_SOURCES) d
+where a.report_id=c.report_id
+And B.Query_Id=C.Query_Id
+and b.ds_id = d.ds_id
+And A.Active_Ind='A'
+and a.app_id=1
+--and a.report_id in ();
+--and display_report_name like '%%';
+--and lower(b.query_text) like '%%';
+and report_short_name like '%%'
+order by b.query_id,object_dependency;
+
+
+select * from ra_report_inst_info where run_id= ;
+
+select * from ra_report_instances where run_id= ;
+
+
+-----------------REPORT_QUERY--------------------------
+
+set serveroutput on;
+declare
+cursor c1 is 
+select a.report_short_name,a.display_report_name,b.query_text from ra_reports_b a, ra_seeded_queries b, ra_report_query_map c
+where a.report_id=c.report_id
+and b.query_id=c.query_id
+and a.active_ind='A'
+and a.app_id=1
+and a.report_short_name in ('FBBRDR0002');
+begin
+for i in c1 loop
+dbms_output.put_line('--Report: '|| i.report_short_name || 'Report_Name: '||i.display_report_name);
+dbms_output.put_line('');
+dbms_output.put_line(i.query_text||';');
+dbms_output.put_line('');
+dbms_output.put_line('');
+end loop;
+end;
+
+-----------------REPORT_VERSION_UPDATION--------------------------
+
+select report_id,display_report_name,
+case when display_report_name like '%- v1%' then substr(display_report_name,1,length(display_report_name)-length(substr(display_report_name,-7))) else display_report_name end
+from ra_reports_b where app_id=1 and active_ind='A' and report_id in ();
+
+select REPORT_ID,DISPLAY_REPORT_NAME,
+case when (DISPLAY_REPORT_NAME like '%- v%' or DISPLAY_REPORT_NAME like '%-v%') then SUBSTR(DISPLAY_REPORT_NAME,1,length(DISPLAY_REPORT_NAME)-length(SUBSTR(DISPLAY_REPORT_NAME,-3)))||'2.8' else DISPLAY_REPORT_NAME end
+from ra_reports_b where app_id=1 and active_ind='A' and report_id in ();
+
+update RA_REPORTS_B set DISPLAY_REPORT_NAME = SUBSTR(DISPLAY_REPORT_NAME,1,length(DISPLAY_REPORT_NAME)-length(SUBSTR(DISPLAY_REPORT_NAME,-3)))||'2.8'
+where app_id=1 and active_ind='A' and report_id in ();
+
+------------------------------------------------------------------
+
+-----------------RA_FREEMARKER_TEMPLATES--------------------------
+
+set serveroutput on;
+
+declare
+cursor c1 is select * from ra_freemarker_templates  WHERE fm_template_id = 8;
+begin
+for h in c1 loop
+        DBMS_OUTPUT.PUT_LINE('DELETE FROM ra_freemarker_templates WHERE fm_template_id = '||H.FM_TEMPLATE_ID||';');
+        DBMS_OUTPUT.PUT_LINE('');
+        DBMS_OUTPUT.PUT_LINE('INSERT INTO ra_freemarker_templates (FM_TEMPLATE_ID,FM_TEMPLATE_NAME,FM_TEMPLATE_TEXT) values ('||H.FM_TEMPLATE_ID||','''||H.FM_TEMPLATE_NAME||''','||'NULL'||');');
+        DBMS_OUTPUT.PUT_LINE('');
+        DBMS_OUTPUT.PUT_LINE('SET DEFINE OFF;');
+        DBMS_OUTPUT.PUT_LINE('DECLARE');
+				DBMS_OUTPUT.PUT_LINE('  query_text_string VARCHAR2(32767);');
+				dbms_output.put_line('BEGIN');
+				DBMS_OUTPUT.PUT_LINE('  query_text_string := '''||REPLACE(h.fm_template_text,'''','''''')||''';');
+				DBMS_OUTPUT.PUT_LINE('');
+				DBMS_OUTPUT.PUT_LINE('UPDATE ra_freemarker_templates ');
+				dbms_output.put_line('SET fm_template_text = query_text_string ');
+				dbms_output.put_line('WHERE fm_template_id = '||h.fm_template_id||';');
+				dbms_output.put_line('');
+        dbms_output.put_line('end;');
+        dbms_output.put_line('/');
+      end LOOP;
+        dbms_output.put_line('COMMIT;');
+	dbms_output.put_line('');
+end;
+
+------------------------------------------------------------------
+
+DECLARE
+L_SOEID VARCHAR2(100) := 'vk92214';
+l_report_id NUMBER := :l_report_id;
+BEGIN
+UPDATE ra_seeded_queries SET ra_seeded_queries.last_updated_by = l_soeid, ra_seeded_queries.last_update_time = SYSDATE WHERE query_id IN ( SELECT query_id FROM ra_report_query_map WHERE report_id IN (l_report_id) );
+--UPDATE ra_seeded_query_columns SET ra_seeded_query_columns.last_updated_by = l_soeid, ra_seeded_query_columns.last_update_time = SYSDATE WHERE query_id IN ( SELECT query_id FROM ra_report_query_map WHERE report_id IN (l_report_id) );
+--UPDATE ra_report_query_map SET ra_report_query_map.last_updated_by = l_soeid, ra_report_query_map.last_update_time = SYSDATE WHERE report_id = l_report_id;
+UPDATE ra_reports_b SET ra_reports_b.last_updated_by = l_soeid, ra_reports_b.last_update_dtm = SYSDATE WHERE report_id = l_report_id;
+--UPDATE ra_report_ldap_groups SET ra_report_ldap_groups.last_updated_by = l_soeid, ra_report_ldap_groups.last_update_dtm = SYSDATE WHERE report_id = l_report_id;
+UPDATE RA_REPORT_PARAMETERS_B SET RA_REPORT_PARAMETERS_B.LAST_UPDATED_BY = L_SOEID, RA_REPORT_PARAMETERS_B.LAST_UPDATE_DTM = SYSDATE WHERE REPORT_ID = L_REPORT_ID;
+COMMIT;
+END;
+/
+
+------------------------------------------------------------------
+
+select * from (select Name,case when referenced_type='TABLE' and referenced_Name like 'GTT%' then referenced_Name when referenced_type <>'TABLE' then referenced_Name end REFERENCED_NAME,referenced_type 
+from all_dependencies where referenced_owner='SGLCRM' 
+AND REFERENCED_TYPE <> 'SYNONYM'
+and name in ('TF_FBBGPO0002')) vk where vk.REFERENCED_NAME is not null;
+
+------------------------------------------------------------------
+
+select * from (select name,case when REFERENCED_TYPE='TABLE' and REFERENCED_NAME like 'GTT%' then REFERENCED_NAME when REFERENCED_TYPE <>'TABLE' then REFERENCED_NAME end REFERENCED_NAME,REFERENCED_TYPE 
+from all_dependencies@SGLCRM_DEV_DMG where referenced_owner='SGLCRM' 
+AND REFERENCED_TYPE <> 'SYNONYM'
+and name in ('TF_FBBGPO0002')) vk where vk.REFERENCED_NAME is not null;
+
+------------------------------------------------------------------
