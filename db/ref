@@ -1,0 +1,12 @@
+create or replace 
+FUNCTION RTN_REFCURSOR (P_TABLE VARCHAR2)
+RETURN SYS_REFCURSOR IS
+
+V_REFCUR   SYS_REFCURSOR;
+
+/* Created by Soji to expiriment the Refufurson with varying lengthe and data */
+BEGIN
+open v_refCur for 'select * from '||P_TABLE ;
+
+return v_refCur ;
+end
