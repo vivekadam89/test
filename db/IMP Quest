@@ -1,0 +1,27 @@
+Check Table Size
+
+select 
+segment_name table_name, 
+sum(bytes)/(1024*1024) table_size_meg 
+from 
+user_segments 
+where 
+segment_type='TABLE' 
+and 
+segment_name = 'MYTAB' 
+group by segment_name 
+
+---------------------------------------
+
+select 
+segment_name table_name, 
+sum(bytes)/(1024*1024) table_size_meg 
+from 
+user_extents 
+where 
+segment_type='TABLE' 
+and 
+segment_name = 'MYTAB' 
+group by segment_name 
+
+---------------------------------------
