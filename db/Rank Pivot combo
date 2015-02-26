@@ -1,0 +1,30 @@
+Rank Pivot Combo example
+
+
+CREATE TABLE "RPTAPP"."ABCD_DMG"
+   (           "FNAME" VARCHAR2(20 BYTE),
+                "LNAME" VARCHAR2(20 BYTE),
+                "AGE" NUMBER(20,0),
+                "ADDRESS" VARCHAR2(20 BYTE)
+   ) ;
+ 
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Pramod','Uthkam',29);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Pramod','Uthkam',32);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Pramod','Uthkam',37);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Pramod','Uthkam',39);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Vivek','Kadam',25);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Vivek','Kadam',29);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Vivek','Kadam',33);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Dhiraj','Gaikwad',27);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Dhiraj','Gaikwad',31);
+Insert into ABCD_DMG (FNAME,LNAME,AGE) values ('Dhiraj','Gaikwad',40);
+ 
+ 
+SELECT *
+FROM   (SELECT fname||lname PP , fname,lname,
+       age,
+       'C'||RANK() OVER (PARTITION BY fname,
+       lname ORDER BY age) rank
+FROM   ABCD_DMG)
+PIVOT  (sum(age) FOR (rank) IN ('C1' as C1 , 'C2' AS C2, 'C3' AS C3,'C4' AS C4))
+order by 1;
